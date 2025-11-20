@@ -1,6 +1,45 @@
 import streamlit as st
 from datetime import datetime
 from storage import load_settings, save_settings
+from Data_readings import load_google_sheets
+from streamlit_autorefresh import st_autorefresh
+
+# -----------------------------
+# DATA READINGS
+# -----------------------------
+
+def realtime_monitor_temp():
+  df = load_google_sheets()
+  latest = df.iloc[-1]
+
+  temp1 = latest["Temp1"]
+
+  temp2 = latest["Temp2"]
+  
+
+  temp_threshold = st.session_state.settings["temp_threshold"]
+  
+
+  if (temp1 >= temp_threshold):
+      st.error(f"⚠️ Alerte: Température {temp1} dépasse le seuil ({temp_threshold})!")
+  
+  if (temp2 >= temp_threshold):
+      st.error(f"⚠️ Alerte: Température {temp2} dépasse le seuil ({temp_threshold})!")
+
+
+def realtime_monitor_hum():
+  df = load_google_sheets()
+  latest = df.iloc[-1]
+  
+  hum1 = latest["Hum1"]    
+  hum2 = latest["Hum2"]
+  hum_threshold = st.session_state.settings["hum_threshold"]
+
+  if (hum1 >= hum_threshold):
+      st.error(f"⚠️ Alerte: Humidité {hum1} dépasse le seuil ({hum_threshold})!")
+  
+  if (hum2 >= hum_threshold):
+      st.error(f"⚠️ Alerte: Humidité {hum2} dépasse le seuil ({hum_threshold})!")
 
 # -----------------------------
 # PAGE CONFIG
@@ -265,9 +304,14 @@ def history_page():
 # PAGE: SETTINGS
 # -----------------------------
 
+# -----------------------------
+# Autorefresh every 3 seconds
+# -----------------------------
+
 # TEMPERATURE
 
 def settings_page():
+    st_autorefresh(3000, key="refresh")
     top_section_settings(
         title="Paramètres",
         extra_info="Information Globale"
@@ -276,11 +320,15 @@ def settings_page():
     st.write("")
     st.markdown("<h3 style='color:#000;'>Température (°C):</h3>", unsafe_allow_html=True)
 
+    if "temp_slider" not in st.session_state:
+        st.session_state.temp_slider = st.session_state.settings["temp_threshold"]
+
     temp = st.slider(
         "Seuil de Température (°C)",
         min_value=-40,
         max_value=100,
-        value=st.session_state.settings["temp_threshold"]
+        value=st.session_state.settings["temp_threshold"],
+        key = "temp_slider"
     )
 
     st.write("Seuil d'alerte:", temp)
@@ -289,16 +337,22 @@ def settings_page():
         st.session_state.settings["temp_threshold"] = temp
         save_settings(st.session_state.settings)
         st.success("Paramètres sauvegardés!")
+      
+    realtime_monitor_temp()
 
 #   HUMIDITÉ
 
     st.markdown("<h3 style='color:#000;'>Humidité (%):</h3>", unsafe_allow_html=True)
 
+    if "hum_slider" not in st.session_state:
+        st.session_state.hum_slider = st.session_state.settings["hum_threshold"]
+
     hum = st.slider(
         "Seuil d'Humidité (%)",
         min_value=0,
         max_value=100,
-        value=st.session_state.settings["hum_threshold"]
+        value=st.session_state.settings["hum_threshold"],
+        key = "hum_slider"
     )
 
     st.write("Seuil d'alerte:", hum)
@@ -307,6 +361,8 @@ def settings_page():
         st.session_state.settings["hum_threshold"] = hum
         save_settings(st.session_state.settings)
         st.success("Paramètres sauvegardés!")
+    
+    realtime_monitor_hum()
 
 
 # -----------------------------
