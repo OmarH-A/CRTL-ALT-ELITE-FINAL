@@ -1,4 +1,4 @@
 {
-    "temp_threshold": 79,
-    "hum_threshold": 65
+    "temp_threshold": 61,
+    "hum_threshold": 92
 }

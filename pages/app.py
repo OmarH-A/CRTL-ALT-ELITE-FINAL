@@ -1,8 +1,28 @@
 import streamlit as st
+import smtplib
 from datetime import datetime
 from storage import load_settings, save_settings
 from Data_readings import load_google_sheets
 from streamlit_autorefresh import st_autorefresh
+
+sender_email = "ctrlaltelite.alertsystem@gmail.com"
+rec_email = "omarhusseinaly@gmail.com"
+valid_pass = "zrea mfjb ougy jzti"
+
+# -----------------------------
+# AUTHENTIFICAITON
+# -----------------------------
+
+if "authenticated" not in st.session_state or not st.session_state.authenticated:
+    st.warning("Veuillez vous connecter pour accéder à l'application.")
+    st.switch_page("streamlit_app_login.py")
+
+# -----------------------------
+# LOG0
+# -----------------------------
+
+#logo = "CTRL-ALT ELITE logo.png"
+#st.logo(logo, size="large")
 
 # -----------------------------
 # DATA READINGS
@@ -22,9 +42,15 @@ def realtime_monitor_temp():
 
   if (temp1 >= temp_threshold):
       st.error(f"⚠️ Alerte: Température {temp1} dépasse le seuil ({temp_threshold})!")
+      
+      server = smtplib.SMTP('smtp.gmail.com',587)
+      server.starttls()
+      server.login(sender_email,valid_pass)
+      msg = (f"Alerte: Temperature {temp2} depasse le seuil ({temp_threshold})°C!")
+      server.sendmail(sender_email,rec_email,msg)
   
   if (temp2 >= temp_threshold):
-      st.error(f"⚠️ Alerte: Température {temp2} dépasse le seuil ({temp_threshold})!")
+      st.error(f"⚠️ Alerte: Temperature {temp2} dépasse le seuil ({temp_threshold})!")
 
 
 def realtime_monitor_hum():
@@ -36,10 +62,10 @@ def realtime_monitor_hum():
   hum_threshold = st.session_state.settings["hum_threshold"]
 
   if (hum1 >= hum_threshold):
-      st.error(f"⚠️ Alerte: Humidité {hum1} dépasse le seuil ({hum_threshold})!")
+      st.error(f"⚠️ Alerte: Humidite {hum1} dépasse le seuil ({hum_threshold})!")
   
   if (hum2 >= hum_threshold):
-      st.error(f"⚠️ Alerte: Humidité {hum2} dépasse le seuil ({hum_threshold})!")
+      st.error(f"⚠️ Alerte: Humidite {hum2} dépasse le seuil ({hum_threshold})!")
 
 # -----------------------------
 # PAGE CONFIG
@@ -326,7 +352,7 @@ def settings_page():
     temp = st.slider(
         "Seuil de Température (°C)",
         min_value=-40,
-        max_value=100,
+        max_value=100, #En temps normal, la température interne d'un réfrigérateur devrait se situer entre 1.7°C et 3.3°C (mais pour la démo, on la garde à 100)
         value=st.session_state.settings["temp_threshold"],
         key = "temp_slider"
     )

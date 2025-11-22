@@ -5,7 +5,7 @@ SETTINGS_FILE = "settings.json"
 
 def load_settings():
     """Load settings from JSON file or create defaults."""
-    defaults = {"temp_threshold": 25, "hum_threshold": 50}
+    defaults = {"temp_threshold": 25, "hum_threshold": 20}
     if not os.path.exists(SETTINGS_FILE) or os.stat(SETTINGS_FILE).st_size == 0:
         save_settings(defaults)
         return defaults
