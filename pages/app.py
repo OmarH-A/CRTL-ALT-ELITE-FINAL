@@ -1,16 +1,51 @@
 import streamlit as st
 import smtplib
-from datetime import datetime
+from datetime import datetime, timedelta
 from storage import load_settings, save_settings
 from Data_readings import load_google_sheets
 from streamlit_autorefresh import st_autorefresh
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 
 sender_email = "ctrlaltelite.alertsystem@gmail.com"
 rec_email = "omarhusseinaly@gmail.com"
 valid_pass = "zrea mfjb ougy jzti"
 
 # -----------------------------
-# AUTHENTIFICAITON
+# ALARM LOGIC
+# -----------------------------
+
+def send_alert(subject, body, sender, receiver_email, app_password):
+      msg = MIMEMultipart()
+      msg["From"] = sender
+      msg["To"] = receiver_email
+      msg["Subject"] = subject  
+
+      msg.attach(MIMEText(body, "plain", "utf-8"))
+
+      server = smtplib.SMTP('smtp.gmail.com',587)
+      server.starttls()
+      server.login(sender_email,app_password)
+      server.sendmail(sender_email,rec_email,msg.as_string())
+
+# -----------------------------
+# NOTIFICATIONS INTERVAL + LOGIC
+# -----------------------------
+
+if "last_temp1_email" not in st.session_state:
+    st.session_state.last_temp1_email = None
+
+if "last_temp2_email" not in st.session_state:
+    st.session_state.last_temp2_email = None
+
+def should_send_email(last_time, interval_minutes):
+    if last_time is None:
+        return True
+    return datetime.now() - last_time >= timedelta(minutes=interval_minutes)
+
+# -----------------------------
+# AUTHENTIFICATION
 # -----------------------------
 
 if "authenticated" not in st.session_state or not st.session_state.authenticated:
@@ -39,18 +74,20 @@ def realtime_monitor_temp():
 
   temp_threshold = st.session_state.settings["temp_threshold"]
   
+  EMAIL_INTERVAL_MINUTES = st.session_state.settings["alert_interval"]
 
   if (temp1 >= temp_threshold):
-      st.error(f"⚠️ Alerte: Température {temp1} dépasse le seuil ({temp_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Température {temp1}°C du capteur 1 dépasse le seuil ({temp_threshold})!")
+      st.error(alert_msg)
       
-      server = smtplib.SMTP('smtp.gmail.com',587)
-      server.starttls()
-      server.login(sender_email,valid_pass)
-      msg = (f"Alerte: Temperature {temp2} depasse le seuil ({temp_threshold})°C!")
-      server.sendmail(sender_email,rec_email,msg)
+      if should_send_email(st.session_state.last_temp1_email, EMAIL_INTERVAL_MINUTES):
+            send_alert("Alerte de température!", alert_msg, sender_email, rec_email, valid_pass)
+            st.session_state.last_temp1_email = datetime.now()
   
   if (temp2 >= temp_threshold):
-      st.error(f"⚠️ Alerte: Temperature {temp2} dépasse le seuil ({temp_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Température {temp2}°C du capteur 2 dépasse le seuil ({temp_threshold})!")
+      st.error(alert_msg)
+
 
 
 def realtime_monitor_hum():
@@ -62,10 +99,12 @@ def realtime_monitor_hum():
   hum_threshold = st.session_state.settings["hum_threshold"]
 
   if (hum1 >= hum_threshold):
-      st.error(f"⚠️ Alerte: Humidite {hum1} dépasse le seuil ({hum_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Humidite {hum1}% du capteur 1 dépasse le seuil ({hum_threshold})!")
+      st.error(alert_msg)
   
   if (hum2 >= hum_threshold):
-      st.error(f"⚠️ Alerte: Humidite {hum2} dépasse le seuil ({hum_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Humidite {hum2}% du capteur 2 dépasse le seuil ({hum_threshold})!")
+      st.error(alert_msg)
 
 # -----------------------------
 # PAGE CONFIG
@@ -390,6 +429,28 @@ def settings_page():
     
     realtime_monitor_hum()
 
+#   ALERTES
+
+    st.markdown("<h3 style='color:#000;'>Alertes ⚠️:</h3>", unsafe_allow_html=True)
+
+    if "alert_interval" not in st.session_state.settings:
+      st.session_state.settings["alert_interval"] = 5.0  
+
+    if "alert_interval_input" not in st.session_state:
+        st.session_state.alert_interval_input = st.session_state.settings["alert_interval"]
+
+    intervalle = st.number_input("Intervalle des notifications (minutes):", 
+                                 value=st.session_state.settings["alert_interval"],
+                                 min_value=0.0,
+                                 step=0.25, 
+                                 icon="🚨", 
+                                 format="%0.2f",
+                                 key="alert_interval_input")
+
+    if intervalle != st.session_state.settings["alert_interval"]:
+      st.session_state.settings["alert_interval"] = intervalle
+      save_settings(st.session_state.settings)
+      st.success("Paramètres sauvegardés!")
 
 # -----------------------------
 # PAGE LOADER
