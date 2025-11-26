@@ -1,5 +1,5 @@
 {
-    "temp_threshold": 65,
-    "hum_threshold": 78,
-    "alert_interval": 6.0
+    "temp_threshold": 67,
+    "hum_threshold": 76,
+    "alert_interval": 1.5
 }

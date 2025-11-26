@@ -39,6 +39,13 @@ if "last_temp1_email" not in st.session_state:
 if "last_temp2_email" not in st.session_state:
     st.session_state.last_temp2_email = None
 
+if "last_hum1_email" not in st.session_state:
+    st.session_state.last_hum1_email = None
+
+if "last_hum2_email" not in st.session_state:
+    st.session_state.last_hum2_email = None
+  
+
 def should_send_email(last_time, interval_minutes):
     if last_time is None:
         return True
@@ -53,23 +60,18 @@ if "authenticated" not in st.session_state or not st.session_state.authenticated
     st.switch_page("streamlit_app_login.py")
 
 # -----------------------------
-# LOG0
-# -----------------------------
-
-#logo = "CTRL-ALT ELITE logo.png"
-#st.logo(logo, size="large")
-
-# -----------------------------
 # DATA READINGS
 # -----------------------------
 
+def latest_value(sensor):
+    df = load_google_sheets(1)
+    latest = df.iloc[-1][sensor]
+    return latest
+
 def realtime_monitor_temp():
-  df = load_google_sheets()
-  latest = df.iloc[-1]
+  temp1 = latest_value(1)
 
-  temp1 = latest["Temp1"]
-
-  temp2 = latest["Temp2"]
+  temp2 = latest_value(3)
   
 
   temp_threshold = st.session_state.settings["temp_threshold"]
@@ -77,7 +79,7 @@ def realtime_monitor_temp():
   EMAIL_INTERVAL_MINUTES = st.session_state.settings["alert_interval"]
 
   if (temp1 >= temp_threshold):
-      alert_msg = (f"⚠️ Alerte: Température {temp1}°C du capteur 1 dépasse le seuil ({temp_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Température {temp1}°C du capteur 1 dépasse le seuil ({temp_threshold}°C)!")
       st.error(alert_msg)
       
       if should_send_email(st.session_state.last_temp1_email, EMAIL_INTERVAL_MINUTES):
@@ -85,26 +87,38 @@ def realtime_monitor_temp():
             st.session_state.last_temp1_email = datetime.now()
   
   if (temp2 >= temp_threshold):
-      alert_msg = (f"⚠️ Alerte: Température {temp2}°C du capteur 2 dépasse le seuil ({temp_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Température {temp2}°C du capteur 2 dépasse le seuil ({temp_threshold}°C)!")
       st.error(alert_msg)
+
+      if should_send_email(st.session_state.last_temp2_email, EMAIL_INTERVAL_MINUTES):
+            send_alert("Alerte de température!", alert_msg, sender_email, rec_email, valid_pass)
+            st.session_state.last_temp2_email = datetime.now()
 
 
 
 def realtime_monitor_hum():
-  df = load_google_sheets()
-  latest = df.iloc[-1]
   
-  hum1 = latest["Hum1"]    
-  hum2 = latest["Hum2"]
+  hum1 = latest_value(2)
+  hum2 = latest_value(4)
   hum_threshold = st.session_state.settings["hum_threshold"]
 
+  EMAIL_INTERVAL_MINUTES = st.session_state.settings["alert_interval"]
+
   if (hum1 >= hum_threshold):
-      alert_msg = (f"⚠️ Alerte: Humidite {hum1}% du capteur 1 dépasse le seuil ({hum_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Humidite {hum1}% du capteur 1 dépasse le seuil ({hum_threshold}%)!")
       st.error(alert_msg)
+
+      if should_send_email(st.session_state.last_hum1_email, EMAIL_INTERVAL_MINUTES):
+            send_alert("Alerte d'humidité!", alert_msg, sender_email, rec_email, valid_pass)
+            st.session_state.last_hum1_email = datetime.now()
   
   if (hum2 >= hum_threshold):
-      alert_msg = (f"⚠️ Alerte: Humidite {hum2}% du capteur 2 dépasse le seuil ({hum_threshold})!")
+      alert_msg = (f"⚠️ Alerte: Humidite {hum2}% du capteur 2 dépasse le seuil ({hum_threshold}%)!")
       st.error(alert_msg)
+
+      if should_send_email(st.session_state.last_hum2_email, EMAIL_INTERVAL_MINUTES):
+            send_alert("Alerte d'humidité!", alert_msg, sender_email, rec_email, valid_pass)
+            st.session_state.last_hum2_email = datetime.now()
 
 # -----------------------------
 # PAGE CONFIG
@@ -130,6 +144,23 @@ if "settings_loaded" not in st.session_state:
 
 
 # -----------------------------
+# STATUS LOGIC
+# -----------------------------
+
+def status(threshold, value):
+
+    if value < (threshold - 10):
+        text = "Bon"
+  
+    elif (threshold - 10) <= value < (threshold):
+        text = "Moyen"
+        
+    else:
+        text = "En danger!"
+    
+    return text
+
+# -----------------------------
 # SHARED TOP BAR
 # -----------------------------
 def top_section(title, avg_value, extra_info):
@@ -141,7 +172,7 @@ def top_section(title, avg_value, extra_info):
                     border: 1px solid #e1e1e1;">
             <h2 style="margin: 0; color: white;">{title}</h2>
             <p style="margin: 4px 0; color: white;">Heure Actuelle: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
-            <p style="margin: 4px 0; color: white;">Moyenne: <b>{avg_value}</b></p>
+            <p style="margin: 4px 0; color: white;">État: <b>{avg_value}</b></p>
             <p style="margin: 4px 0; color: white;">{extra_info}</p>
         </div>
         """,
@@ -173,7 +204,7 @@ def top_section_settings(title, extra_info):
 def temperature_page():
     top_section(
         title="Température",
-        avg_value="-- °C",
+        avg_value=status(st.session_state.settings["temp_threshold"], latest_value(1)),
         extra_info="Dernière mise à jour: Automatiquement depuis ThingSpeak"
     )
 
@@ -235,7 +266,7 @@ def temperature_page():
 def humidity_page():
     top_section(
         title="Humidité",
-        avg_value="-- %",             
+        avg_value=status(st.session_state.settings["hum_threshold"], latest_value(2)),
         extra_info="Dernière mise à jour: Automatiquement depuis ThingSpeak"
     )
 
@@ -297,7 +328,7 @@ def humidity_page():
 def history_page():
     top_section_settings(
         title="Historique",
-        extra_info="Dernière mise à jour: 2025-11-15 12:00:00"
+        extra_info="Dernière mise à jour: 2025-11-24 12:00:00"
     )
 
     st.write("")
@@ -376,10 +407,10 @@ def history_page():
 # TEMPERATURE
 
 def settings_page():
-    st_autorefresh(3000, key="refresh")
+    st_autorefresh(10000, key="refresh")
     top_section_settings(
         title="Paramètres",
-        extra_info="Information Globale"
+        extra_info="États - Temp: " + status(st.session_state.settings["temp_threshold"], latest_value(1)) + " | Hum: " + status(st.session_state.settings["hum_threshold"], latest_value(2))
     )
 
     st.write("")

@@ -16,7 +16,7 @@ def login_page():
     st.title("Login")
 
     with st.form("login_form"):
-        email = st.text_input("Email", placeholder="Enter your email")
+        email = st.text_input("Email", placeholder="Entrer votre courriel")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Login")
 
