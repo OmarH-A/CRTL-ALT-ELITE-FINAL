@@ -426,7 +426,6 @@ def settings_page():
         "Seuil de Température (°C)",
         min_value=-40,
         max_value=100, #En temps normal, la température interne d'un réfrigérateur devrait se situer entre 1.7°C et 3.3°C (mais pour la démo, on la garde à 100)
-        value=st.session_state.settings["temp_threshold"],
         key = "temp_slider"
     )
 
@@ -450,7 +449,6 @@ def settings_page():
         "Seuil d'Humidité (%)",
         min_value=0,
         max_value=100,
-        value=st.session_state.settings["hum_threshold"],
         key = "hum_slider"
     )
 
