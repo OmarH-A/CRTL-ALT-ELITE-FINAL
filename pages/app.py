@@ -8,8 +8,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 
+if "user_email" not in st.session_state:
+  st.session_state.user_email = None
+
 sender_email = "ctrlaltelite.alertsystem@gmail.com"
-rec_email = "omarhusseinaly@gmail.com"
+rec_email = st.session_state.user_email
 valid_pass = "zrea mfjb ougy jzti"
 
 # -----------------------------
@@ -64,7 +67,7 @@ if "authenticated" not in st.session_state or not st.session_state.authenticated
 # -----------------------------
 
 def latest_value(sensor):
-    df = load_google_sheets(1)
+    df = load_google_sheets(5)
     latest = df.iloc[-1][sensor]
     return latest
 
@@ -328,7 +331,7 @@ def humidity_page():
 def history_page():
     top_section_settings(
         title="Historique",
-        extra_info="Dernière mise à jour: 2025-11-24 12:00:00"
+        extra_info="Dernière mise à jour: 2025-11-15 12:00:00"
     )
 
     st.write("")
@@ -410,7 +413,7 @@ def settings_page():
     st_autorefresh(10000, key="refresh")
     top_section_settings(
         title="Paramètres",
-        extra_info="États - Temp: " + status(st.session_state.settings["temp_threshold"], latest_value(1)) + " | Hum: " + status(st.session_state.settings["hum_threshold"], latest_value(2))
+        extra_info="État - Temp: " + status(st.session_state.settings["temp_threshold"], latest_value(1)) +" | Hum: " + status(st.session_state.settings["hum_threshold"], latest_value(2)) 
     )
 
     st.write("")
