@@ -208,7 +208,7 @@ def temperature_page():
     top_section(
         title="Température",
         avg_value=status(st.session_state.settings["temp_threshold"], latest_value(1)),
-        extra_info="Dernière mise à jour: Automatiquement depuis ThingSpeak"
+        extra_info=f"Dernière mise à jour: {latest_value(0)}"
     )
 
     st.write("")
@@ -270,7 +270,7 @@ def humidity_page():
     top_section(
         title="Humidité",
         avg_value=status(st.session_state.settings["hum_threshold"], latest_value(2)),
-        extra_info="Dernière mise à jour: Automatiquement depuis ThingSpeak"
+        extra_info=f"Dernière mise à jour: {latest_value(0)}"
     )
 
     st.write("")
