@@ -331,7 +331,7 @@ def humidity_page():
 def history_page():
     top_section_settings(
         title="Historique",
-        extra_info="Dernière mise à jour: 2025-11-15 12:00:00"
+        extra_info="État - Temp: " + status(st.session_state.settings["temp_threshold"], latest_value(1)) +" | Hum: " + status(st.session_state.settings["hum_threshold"], latest_value(2)) 
     )
 
     st.write("")
