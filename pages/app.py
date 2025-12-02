@@ -2,7 +2,7 @@ import streamlit as st
 import smtplib
 from datetime import datetime, timedelta
 from storage import load_settings, save_settings
-from Data_readings import load_google_sheets
+from Data_readings import load_google_sheets, SHEET_URL
 from streamlit_autorefresh import st_autorefresh
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -483,6 +483,9 @@ def settings_page():
       st.session_state.settings["alert_interval"] = intervalle
       save_settings(st.session_state.settings)
       st.success("Paramètres sauvegardés!")
+
+    st.link_button("Télécharger les données", icon=":material/download:", url=SHEET_URL)
+        
 
 # -----------------------------
 # PAGE LOADER
